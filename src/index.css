@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #222;
+  color: #fff;
+}
+
+.cabecalho nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.cabecalho a {
+  color: #ccc;
+  text-decoration: none;
+}
+
+.cabecalho a.active {
+  color: #fff;
+  font-weight: bold;
+}
+
+.conteudo {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.conteudo h2 {
+  margin-bottom: 1rem;
+}
