@@ -24,11 +24,34 @@ async function requisicao(caminho, opcoes = {}) {
   return dados;
 }
 
+export const STATUS = { alive: 'Vivo', dead: 'Morto', unknown: 'Desconhecido' };
+
+export const GENEROS = {
+  female: 'Feminino',
+  male: 'Masculino',
+  genderless: 'Sem gênero',
+  unknown: 'Desconhecido',
+};
+
+export const ESPECIES = {
+  Human: 'Humano',
+  Alien: 'Alienígena',
+  Humanoid: 'Humanoide',
+  Robot: 'Robô',
+  Animal: 'Animal',
+  'Mythological Creature': 'Criatura mitológica',
+  Poopybutthole: 'Poopybutthole',
+  Cronenberg: 'Cronenberg',
+  Disease: 'Doença',
+  unknown: 'Desconhecida',
+};
+
 const estadoInicial = {
   personagens: [],
   total: 0,
   carregando: false,
   erro: null,
+  ultimaBusca: null,
 };
 
 function personagensReducer(estado, acao) {
@@ -41,6 +64,7 @@ function personagensReducer(estado, acao) {
         carregando: false,
         personagens: acao.personagens,
         total: acao.total,
+        ultimaBusca: acao.filtros,
       };
     case 'BUSCA_ERRO':
       return { ...estado, carregando: false, erro: acao.erro, personagens: [], total: 0 };
@@ -58,15 +82,43 @@ export function PersonagensProvider({ children }) {
     dispatch({ type: 'BUSCA_INICIOU' });
     try {
       const dados = await requisicao('/character', { signal });
-      dispatch({ type: 'BUSCA_SUCESSO', personagens: dados.results, total: dados.info.count });
+      dispatch({
+        type: 'BUSCA_SUCESSO',
+        personagens: dados.results,
+        total: dados.info.count,
+        filtros: null,
+      });
     } catch (erro) {
       if (erro.name !== 'AbortError') dispatch({ type: 'BUSCA_ERRO', erro: erro.message });
     }
   }, []);
 
+  const buscarPersonagens = useCallback(async (filtros) => {
+    dispatch({ type: 'BUSCA_INICIOU' });
+    const params = new URLSearchParams({ name: filtros.nome });
+    if (filtros.status) params.append('status', filtros.status);
+    if (filtros.especie) params.append('species', filtros.especie);
+    if (filtros.genero) params.append('gender', filtros.genero);
+    try {
+      const dados = await requisicao(`/character/?${params}`);
+      dispatch({
+        type: 'BUSCA_SUCESSO',
+        personagens: dados.results,
+        total: dados.info.count,
+        filtros,
+      });
+    } catch (erro) {
+      if (erro.status === 404) {
+        dispatch({ type: 'BUSCA_SUCESSO', personagens: [], total: 0, filtros });
+      } else {
+        dispatch({ type: 'BUSCA_ERRO', erro: erro.message });
+      }
+    }
+  }, []);
+
   const valor = useMemo(
-    () => ({ ...estado, carregarPersonagens }),
-    [estado, carregarPersonagens],
+    () => ({ ...estado, carregarPersonagens, buscarPersonagens }),
+    [estado, carregarPersonagens, buscarPersonagens],
   );
 
   return <PersonagensContext.Provider value={valor}>{children}</PersonagensContext.Provider>;
