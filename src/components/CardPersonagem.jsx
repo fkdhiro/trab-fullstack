@@ -1,10 +1,12 @@
 import Badge from 'react-bootstrap/Badge';
+import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
-import { ESPECIES, STATUS } from '../contexts/PersonagensContext.jsx';
+import { ESPECIES, STATUS, usePersonagens } from '../contexts/PersonagensContext.jsx';
 
 const CORES_STATUS = { alive: 'success', dead: 'danger', unknown: 'secondary' };
 
 function CardPersonagem({ personagem }) {
+  const { abrirDetalhes } = usePersonagens();
   const status = personagem.status.toLowerCase();
 
   return (
@@ -20,6 +22,11 @@ function CardPersonagem({ personagem }) {
           Visto por último em: {personagem.location?.name ?? 'desconhecido'}
         </Card.Text>
       </Card.Body>
+      <Card.Footer className="bg-transparent border-0 pt-0 pb-3">
+        <Button variant="primary" size="sm" onClick={() => abrirDetalhes(personagem)}>
+          Ver detalhes
+        </Button>
+      </Card.Footer>
     </Card>
   );
 }

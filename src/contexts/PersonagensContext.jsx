@@ -54,6 +54,7 @@ const estadoInicial = {
   carregando: false,
   erro: null,
   ultimaBusca: null,
+  selecionado: null,
 };
 
 function personagensReducer(estado, acao) {
@@ -79,6 +80,10 @@ function personagensReducer(estado, acao) {
         total: 0,
         totalPaginas: 0,
       };
+    case 'DETALHES_ABERTOS':
+      return { ...estado, selecionado: acao.personagem };
+    case 'DETALHES_FECHADOS':
+      return { ...estado, selecionado: null };
     default:
       throw new Error(`Ação desconhecida: ${acao.type}`);
   }
@@ -138,9 +143,39 @@ export function PersonagensProvider({ children }) {
     [consultar, estado.ultimaBusca],
   );
 
+  const abrirDetalhes = useCallback(
+    (personagem) => dispatch({ type: 'DETALHES_ABERTOS', personagem }),
+    [],
+  );
+
+  const fecharDetalhes = useCallback(() => dispatch({ type: 'DETALHES_FECHADOS' }), []);
+
+  const buscarEpisodios = useCallback(async (personagem, signal) => {
+    const ids = personagem.episode.map((url) => url.split('/').pop());
+    if (ids.length === 0) return [];
+    const dados = await requisicao(`/episode/${ids.join(',')}`, { signal });
+    return Array.isArray(dados) ? dados : [dados];
+  }, []);
+
   const valor = useMemo(
-    () => ({ ...estado, carregarPersonagens, buscarPersonagens, irParaPagina }),
-    [estado, carregarPersonagens, buscarPersonagens, irParaPagina],
+    () => ({
+      ...estado,
+      carregarPersonagens,
+      buscarPersonagens,
+      irParaPagina,
+      abrirDetalhes,
+      fecharDetalhes,
+      buscarEpisodios,
+    }),
+    [
+      estado,
+      carregarPersonagens,
+      buscarPersonagens,
+      irParaPagina,
+      abrirDetalhes,
+      fecharDetalhes,
+      buscarEpisodios,
+    ],
   );
 
   return <PersonagensContext.Provider value={valor}>{children}</PersonagensContext.Provider>;
