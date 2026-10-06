@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useReducer } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'https://rickandmortyapi.com/api';
+const CHAVE_FAVORITOS = 'favoritos-rick-and-morty';
 
 class ErroApi extends Error {
   constructor(mensagem, status) {
@@ -55,7 +56,17 @@ const estadoInicial = {
   erro: null,
   ultimaBusca: null,
   selecionado: null,
+  favoritos: [],
 };
+
+function iniciarEstado(estado) {
+  try {
+    const salvos = JSON.parse(localStorage.getItem(CHAVE_FAVORITOS));
+    return Array.isArray(salvos) ? { ...estado, favoritos: salvos } : estado;
+  } catch {
+    return estado;
+  }
+}
 
 function personagensReducer(estado, acao) {
   switch (acao.type) {
@@ -84,6 +95,15 @@ function personagensReducer(estado, acao) {
       return { ...estado, selecionado: acao.personagem };
     case 'DETALHES_FECHADOS':
       return { ...estado, selecionado: null };
+    case 'FAVORITO_ALTERNADO': {
+      const jaEraFavorito = estado.favoritos.some((p) => p.id === acao.personagem.id);
+      return {
+        ...estado,
+        favoritos: jaEraFavorito
+          ? estado.favoritos.filter((p) => p.id !== acao.personagem.id)
+          : [...estado.favoritos, acao.personagem],
+      };
+    }
     default:
       throw new Error(`Ação desconhecida: ${acao.type}`);
   }
@@ -102,7 +122,15 @@ function montarParametros(filtros, pagina) {
 const PersonagensContext = createContext(null);
 
 export function PersonagensProvider({ children }) {
-  const [estado, dispatch] = useReducer(personagensReducer, estadoInicial);
+  const [estado, dispatch] = useReducer(personagensReducer, estadoInicial, iniciarEstado);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_FAVORITOS, JSON.stringify(estado.favoritos));
+    } catch {
+      return;
+    }
+  }, [estado.favoritos]);
 
   const consultar = useCallback(async (filtros, pagina, signal) => {
     dispatch({ type: 'BUSCA_INICIOU' });
@@ -157,6 +185,16 @@ export function PersonagensProvider({ children }) {
     return Array.isArray(dados) ? dados : [dados];
   }, []);
 
+  const alternarFavorito = useCallback(
+    (personagem) => dispatch({ type: 'FAVORITO_ALTERNADO', personagem }),
+    [],
+  );
+
+  const ehFavorito = useCallback(
+    (id) => estado.favoritos.some((p) => p.id === id),
+    [estado.favoritos],
+  );
+
   const valor = useMemo(
     () => ({
       ...estado,
@@ -166,6 +204,8 @@ export function PersonagensProvider({ children }) {
       abrirDetalhes,
       fecharDetalhes,
       buscarEpisodios,
+      alternarFavorito,
+      ehFavorito,
     }),
     [
       estado,
@@ -175,6 +215,8 @@ export function PersonagensProvider({ children }) {
       abrirDetalhes,
       fecharDetalhes,
       buscarEpisodios,
+      alternarFavorito,
+      ehFavorito,
     ],
   );
 

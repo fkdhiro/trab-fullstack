@@ -5,6 +5,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
 import { ESPECIES, GENEROS, STATUS, usePersonagens } from '../contexts/PersonagensContext.jsx';
+import BotaoFavorito from './BotaoFavorito.jsx';
 
 function ConteudoDetalhes({ selecionado }) {
   const { fecharDetalhes, buscarEpisodios } = usePersonagens();
@@ -49,8 +50,11 @@ function ConteudoDetalhes({ selecionado }) {
             <dt>Origem</dt>
             <dd>{selecionado.origin?.name ?? 'Desconhecida'}</dd>
             <dt>Último local conhecido</dt>
-            <dd className="mb-0">{selecionado.location?.name ?? 'Desconhecido'}</dd>
+            <dd>{selecionado.location?.name ?? 'Desconhecido'}</dd>
           </dl>
+        </div>
+        <div className="mb-3">
+          <BotaoFavorito personagem={selecionado} />
         </div>
 
         <h2 className="h6">Episódios ({selecionado.episode.length})</h2>
