@@ -49,6 +49,8 @@ export const ESPECIES = {
 const estadoInicial = {
   personagens: [],
   total: 0,
+  pagina: 1,
+  totalPaginas: 0,
   carregando: false,
   erro: null,
   ultimaBusca: null,
@@ -64,13 +66,32 @@ function personagensReducer(estado, acao) {
         carregando: false,
         personagens: acao.personagens,
         total: acao.total,
+        pagina: acao.pagina,
+        totalPaginas: acao.totalPaginas,
         ultimaBusca: acao.filtros,
       };
     case 'BUSCA_ERRO':
-      return { ...estado, carregando: false, erro: acao.erro, personagens: [], total: 0 };
+      return {
+        ...estado,
+        carregando: false,
+        erro: acao.erro,
+        personagens: [],
+        total: 0,
+        totalPaginas: 0,
+      };
     default:
       throw new Error(`Ação desconhecida: ${acao.type}`);
   }
+}
+
+function montarParametros(filtros, pagina) {
+  const params = new URLSearchParams({ page: pagina });
+  if (!filtros) return params;
+  params.append('name', filtros.nome);
+  if (filtros.status) params.append('status', filtros.status);
+  if (filtros.especie) params.append('species', filtros.especie);
+  if (filtros.genero) params.append('gender', filtros.genero);
+  return params;
 }
 
 const PersonagensContext = createContext(null);
@@ -78,47 +99,48 @@ const PersonagensContext = createContext(null);
 export function PersonagensProvider({ children }) {
   const [estado, dispatch] = useReducer(personagensReducer, estadoInicial);
 
-  const carregarPersonagens = useCallback(async (signal) => {
+  const consultar = useCallback(async (filtros, pagina, signal) => {
     dispatch({ type: 'BUSCA_INICIOU' });
     try {
-      const dados = await requisicao('/character', { signal });
+      const params = montarParametros(filtros, pagina);
+      const dados = await requisicao(`/character/?${params}`, { signal });
       dispatch({
         type: 'BUSCA_SUCESSO',
         personagens: dados.results,
         total: dados.info.count,
-        filtros: null,
-      });
-    } catch (erro) {
-      if (erro.name !== 'AbortError') dispatch({ type: 'BUSCA_ERRO', erro: erro.message });
-    }
-  }, []);
-
-  const buscarPersonagens = useCallback(async (filtros) => {
-    dispatch({ type: 'BUSCA_INICIOU' });
-    const params = new URLSearchParams({ name: filtros.nome });
-    if (filtros.status) params.append('status', filtros.status);
-    if (filtros.especie) params.append('species', filtros.especie);
-    if (filtros.genero) params.append('gender', filtros.genero);
-    try {
-      const dados = await requisicao(`/character/?${params}`);
-      dispatch({
-        type: 'BUSCA_SUCESSO',
-        personagens: dados.results,
-        total: dados.info.count,
+        pagina,
+        totalPaginas: dados.info.pages,
         filtros,
       });
     } catch (erro) {
+      if (erro.name === 'AbortError') return;
       if (erro.status === 404) {
-        dispatch({ type: 'BUSCA_SUCESSO', personagens: [], total: 0, filtros });
+        dispatch({
+          type: 'BUSCA_SUCESSO',
+          personagens: [],
+          total: 0,
+          pagina: 1,
+          totalPaginas: 0,
+          filtros,
+        });
       } else {
         dispatch({ type: 'BUSCA_ERRO', erro: erro.message });
       }
     }
   }, []);
 
+  const carregarPersonagens = useCallback((signal) => consultar(null, 1, signal), [consultar]);
+
+  const buscarPersonagens = useCallback((filtros) => consultar(filtros, 1), [consultar]);
+
+  const irParaPagina = useCallback(
+    (pagina) => consultar(estado.ultimaBusca, pagina),
+    [consultar, estado.ultimaBusca],
+  );
+
   const valor = useMemo(
-    () => ({ ...estado, carregarPersonagens, buscarPersonagens }),
-    [estado, carregarPersonagens, buscarPersonagens],
+    () => ({ ...estado, carregarPersonagens, buscarPersonagens, irParaPagina }),
+    [estado, carregarPersonagens, buscarPersonagens, irParaPagina],
   );
 
   return <PersonagensContext.Provider value={valor}>{children}</PersonagensContext.Provider>;
