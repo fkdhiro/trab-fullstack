@@ -1,13 +1,15 @@
-import { NavLink } from 'react-router-dom'
+import Container from 'react-bootstrap/Container';
+import Navbar from 'react-bootstrap/Navbar';
 
-export default function Cabecalho() {
+function Cabecalho() {
   return (
-    <header className="cabecalho">
-      <h1>Projeto 1</h1>
-      <nav>
-        <NavLink to="/">Início</NavLink>
-        <NavLink to="/sobre">Sobre</NavLink>
-      </nav>
-    </header>
-  )
+    <Navbar bg="dark" data-bs-theme="dark">
+      <Container>
+        <Navbar.Brand>Multiverso Rick and Morty</Navbar.Brand>
+        <Navbar.Text className="small">Dados: The Rick and Morty API</Navbar.Text>
+      </Container>
+    </Navbar>
+  );
 }
+
+export default Cabecalho;

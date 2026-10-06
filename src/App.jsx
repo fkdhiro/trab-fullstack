@@ -1,20 +1,15 @@
-import { Routes, Route } from 'react-router-dom'
-import Cabecalho from './components/Cabecalho.jsx'
-import Inicio from './pages/Inicio.jsx'
-import Sobre from './pages/Sobre.jsx'
-import NaoEncontrada from './pages/NaoEncontrada.jsx'
+import Container from 'react-bootstrap/Container';
+import Cabecalho from './components/Cabecalho.jsx';
 
-export default function App() {
+function App() {
   return (
     <>
       <Cabecalho />
-      <main className="conteudo">
-        <Routes>
-          <Route path="/" element={<Inicio />} />
-          <Route path="/sobre" element={<Sobre />} />
-          <Route path="*" element={<NaoEncontrada />} />
-        </Routes>
-      </main>
+      <Container as="main" className="my-4">
+        <p className="text-muted">Em construção.</p>
+      </Container>
     </>
-  )
+  );
 }
+
+export default App;
